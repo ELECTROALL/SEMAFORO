@@ -1,0 +1,278 @@
+int clockpin = 8;  //Cuando ay que leer los bit      SH
+int data = 6;      //Envio datos                     DS
+int latch = 7;     //indica pin de salida en el chip ST
+
+
+
+// ENTRADA DIGITAL , VARIABLE PARA ALMACENAR LOS DATOS DE LAS ENTRADAS
+const int GRN_sig = 2;  // pin 2 como entrada para la señal verde
+const int RED_sig = 3;  // pin 3 como entrada para la señal rojo
+int estado_GRN_sig = 1;
+int estado_RED_sig = 1;
+
+//-----------------------------------------
+//VARIABLES PARA EL CONTADOR VERDE:
+int contador = 0;  // para el contador descendente
+int contador1 = 0;
+int contadorU_G = 0;
+int contadorD_G = 0;
+
+int contadorG_DATA = 0;  // para el contador de tiempo ascendente
+int contadorUT_G = 0;
+int contadorDT_G = 0;
+
+boolean startG = false;
+
+//-----------------------------------------
+//VARIABLES PARA EL CONTADOR ROJO:
+int contadorR = 0;  // para el contador descendente
+int contadorR1 = 0;
+int contadorU_R = 0;
+int contadorD_R = 0;
+
+int contadorR_DATA = 0;  // para el contador de tiempo ascendente
+int contadorUT_R = 0;
+int contadorDT_R = 0;
+
+boolean startR = false;
+
+// PARA EL CONTEO DE SEGUNDOS
+unsigned long time;
+float tiempo = 1000;
+unsigned long t = 0;
+
+
+const int NUM[] = {
+  63,   //Numero 0 en binario es : 00111111
+  6,    //Numero 1 en binario es : 00000110
+  91,   //Numero 2 en binario es : 01011011
+  79,   //Numero 3 en binario es : 01001111
+  102,  //Numero 4 en binario es : 01100110
+  109,  //Numero 5 en binario es : 01101101
+  125,  //Numero 6 en binario es : 01111101
+  7,    //Numero 7 en binario es : 00000111
+  127,  //Numero 8 en binario es : 01111111
+  111,  //Numero 9 en binario es : 01101111
+  63,   //Numero 10 en binario es : 00111111
+  64,   //Numero 11 en binario es : 01000000
+  0,    //Numero 12 en binario es : 00000000
+};
+
+void setup() {
+  //Serial.begin(9600);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(9, OUTPUT);
+  pinMode(10, OUTPUT);
+  pinMode(11, OUTPUT);
+  pinMode(12, OUTPUT);
+  pinMode(13, OUTPUT);
+  pinMode(14, OUTPUT);
+  pinMode(15, OUTPUT);
+  pinMode(16, OUTPUT);
+  pinMode(17, OUTPUT);
+  pinMode(18, OUTPUT);
+  pinMode(19, OUTPUT);
+  digitalWrite(4, 0);
+  digitalWrite(5, 0);
+  digitalWrite(9, 0);
+  digitalWrite(10, 0);
+  digitalWrite(11, 0);
+  digitalWrite(12, 0);
+  digitalWrite(13, 0);
+  digitalWrite(14, 0);
+  digitalWrite(15, 0);
+  digitalWrite(16, 0);
+  digitalWrite(17, 0);
+  digitalWrite(18, 0);
+  digitalWrite(19, 0);
+
+  pinMode(GRN_sig, INPUT);
+  pinMode(RED_sig, INPUT);
+
+  pinMode(latch, OUTPUT);
+  pinMode(clockpin, OUTPUT);
+  pinMode(data, OUTPUT);
+
+  digitalWrite(latch, LOW);
+  shiftOut(data, clockpin, MSBFIRST, NUM[12]);  // lee el arreglo y pasa cada NUM a lectura binaria
+  shiftOut(data, clockpin, MSBFIRST, NUM[12]);  // lee el arreglo y pasa cada NUM a lectura binaria
+  shiftOut(data, clockpin, MSBFIRST, NUM[12]);  // lee el arreglo y pasa cada NUM a lectura binaria
+  shiftOut(data, clockpin, MSBFIRST, NUM[12]);  // lee el arreglo y pasa cada NUM a lectura binaria
+  digitalWrite(latch, HIGH);
+}
+void loop() {
+  estado_GRN_sig = digitalRead(GRN_sig);
+  estado_RED_sig = digitalRead(RED_sig);
+
+  if (estado_GRN_sig == 0 && startG == false) {
+    contador = contadorG_DATA;
+    contadorU_G = contadorUT_G;
+    contadorD_G = contadorDT_G;
+    startG = true;
+
+
+    /*digitalWrite(latch, LOW);
+    shiftOut(data, clockpin, MSBFIRST, NUM[11]);
+    shiftOut(data, clockpin, MSBFIRST, NUM[11]);
+    shiftOut(data, clockpin, MSBFIRST, NUM[11]);
+    shiftOut(data, clockpin, MSBFIRST, NUM[11]);
+    digitalWrite(latch, HIGH);*/
+  }
+  if (estado_RED_sig == 0) {
+
+    if (contador1 > contadorG_DATA) {
+      contadorG_DATA = max(contadorG_DATA, contador1);
+    }
+    contador1 = 0;
+    startG = false;
+  }
+
+  if (estado_GRN_sig == 0 && startG == true) {
+
+    time = millis();
+    if (time - t > tiempo) {
+      t = time;
+      if (contador1 < 99) {
+        if (contador1 >= contadorG_DATA) {
+          if (contadorUT_G >= 10) {
+            contadorUT_G = 0;
+          }
+          if (contadorUT_G >= 9) {
+            contadorDT_G++;
+          }
+          if (contadorDT_G >= 10) {
+            contadorDT_G = 0;
+          }
+          contadorUT_G++;
+        }
+        contador1++;
+      }
+ /*     Serial.println(contador1);
+      Serial.print("contador = ");
+      Serial.println(contador);
+      Serial.print("contadorUT_G = ");
+      Serial.println(contadorUT_G);
+      Serial.print("contadorUT_G = ");
+      Serial.println(contadorDT_G);
+*/
+
+      if (contador == 0) {
+        contadorU_G = 11;
+        contadorD_G = 11;
+      } else if (contador > 0) {
+        contador--;
+        if (contador < 100) {
+          contadorU_G--;
+        }
+
+        if (contadorU_G == 0) {
+          contadorU_G = 10;
+        }
+
+        if (contadorU_G == 9) {
+          if (contadorD_G > 0) {
+            contadorD_G--;
+          }
+        }
+      }
+      cont();
+    }
+  }
+
+  if (estado_RED_sig == 0 && startR == false) {
+    contadorR = contadorR_DATA;
+    contadorU_R = contadorUT_R;
+    contadorD_R = contadorDT_R;
+    startR = true;
+
+
+    /*digitalWrite(latch, LOW);
+    shiftOut(data, clockpin, MSBFIRST, NUM[11]);
+    shiftOut(data, clockpin, MSBFIRST, NUM[11]);
+    shiftOut(data, clockpin, MSBFIRST, NUM[11]);
+    shiftOut(data, clockpin, MSBFIRST, NUM[11]);
+    digitalWrite(latch, HIGH);*/
+  }
+  if (estado_GRN_sig == 0) {
+
+    if (contadorR1 > contadorR_DATA) {
+      contadorR_DATA = max(contadorR_DATA, contadorR1);
+    }
+    contadorR1 = 0;
+    startR = false;
+  }
+
+  if (estado_RED_sig == 0 && startR == true) {
+
+    time = millis();
+    if (time - t > tiempo) {
+      t = time;
+      if (contadorR1 < 99) {
+        if (contadorR1 >= contadorR_DATA) {
+          if (contadorUT_R >= 10) {
+            contadorUT_R = 0;
+          }
+          if (contadorUT_R >= 9) {
+            contadorDT_R++;
+          }
+          if (contadorDT_R >= 10) {
+            contadorDT_R = 0;
+          }
+          contadorUT_R++;
+        }
+        contadorR1++;
+      }
+   /*   Serial.println(contadorR1);
+      Serial.print("contador = ");
+      Serial.println(contadorR);
+      Serial.print("contadorUT_R = ");
+      Serial.println(contadorUT_R);
+      Serial.print("contadorDT_R = ");
+      Serial.println(contadorDT_G);*/
+
+
+      if (contadorR == 0) {
+        contadorU_R = 11;
+        contadorD_R = 11;
+      } else if (contadorR > 0) {
+        contadorR--;
+        if (contadorR < 100) {
+          contadorU_R--;
+        }
+
+        if (contadorU_R == 0) {
+          contadorU_R = 10;
+        }
+
+        if (contadorU_R == 9) {
+          if (contadorD_R > 0) {
+            contadorD_R--;
+          }
+        }
+      }
+      cont();
+    }
+  }
+}
+
+
+
+void cont() {
+  if (estado_GRN_sig == 0) {
+    digitalWrite(latch, LOW);
+    shiftOut(data, clockpin, MSBFIRST, NUM[12]);
+    shiftOut(data, clockpin, MSBFIRST, NUM[12]);
+    shiftOut(data, clockpin, MSBFIRST, NUM[contadorU_G]);
+    shiftOut(data, clockpin, MSBFIRST, NUM[contadorD_G]);
+    digitalWrite(latch, HIGH);
+  }
+  if (estado_RED_sig == 0) {
+    digitalWrite(latch, LOW);
+    shiftOut(data, clockpin, MSBFIRST, NUM[contadorU_R]);
+    shiftOut(data, clockpin, MSBFIRST, NUM[contadorD_R]);
+    shiftOut(data, clockpin, MSBFIRST, NUM[12]);
+    shiftOut(data, clockpin, MSBFIRST, NUM[12]);
+    digitalWrite(latch, HIGH);
+  }
+}
